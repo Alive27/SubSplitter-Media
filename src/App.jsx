@@ -20,7 +20,7 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false); // Nuevo modal de ajustes
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false); // Modal de ajustes y engranaje
   
   const [newName, setNewName] = useState('');
   const [newAmount, setNewAmount] = useState('');
@@ -307,7 +307,7 @@ function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 overflow-x-hidden">
       <div className="max-w-4xl mx-auto space-y-6 w-full">
         
-        {/* Cabecera Responsiva */}
+        {/* Cabecera Responsiva con el botón de Ajustes (Engranaje) bien visible */}
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
           <div className="flex items-center gap-3">
             <div>
@@ -328,15 +328,17 @@ function App() {
               <p className="text-sm text-slate-400">Controla tus micro-pagos y fugas de dinero</p>
             </div>
           </div>
+          
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-start sm:justify-end">
-            {/* Botón de Engranaje (Ajustes PRO y Opciones) */}
+            {/* BOTÓN DE ENGRANAJE VISIBLE */}
             <button
               onClick={() => setIsSettingsModalOpen(true)}
-              className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-emerald-400 rounded-lg transition-all shrink-0 shadow-sm"
+              className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-semibold px-3 py-2 rounded-lg transition-all text-sm shrink-0 shadow-sm"
               title="Ajustes y Opciones PRO"
             >
-              <Settings size={18} />
+              <Settings size={16} className="text-emerald-400" /> Ajustes
             </button>
+
             <button
               onClick={() => setIsShareModalOpen(true)}
               className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-cyan-400 font-semibold px-3.5 py-2 rounded-lg transition-all text-sm shrink-0"
@@ -344,12 +346,14 @@ function App() {
             >
               <Share2 size={16} /> Cartel RRSS
             </button>
+
             <button
               onClick={handleOpenAddModal}
               className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold px-4 py-2 rounded-lg transition-all text-sm shrink-0 shadow-lg"
             >
               <PlusCircle size={18} /> Añadir Suscripción
             </button>
+
             <button
               onClick={handleLogout}
               className="p-2 text-slate-400 hover:text-red-400 bg-slate-900 border border-slate-800 rounded-lg transition-colors shrink-0"
