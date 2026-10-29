@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Crown, CheckCircle2, TrendingUp, BarChart3 } from 'lucide-react';
+import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Crown, CheckCircle2, TrendingUp, BarChart3, AlertTriangle } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { toPng } from 'html-to-image';
 
@@ -24,6 +24,7 @@ function App() {
   const [newAmount, setNewAmount] = useState('');
   const [newCategory, setNewCategory] = useState('Streaming');
   const [newBillingCycle, setNewBillingCycle] = useState('monthly');
+  const [newPaymentDate, setNewPaymentDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Límite de suscripciones para usuarios de la versión Lite
   const LITE_LIMIT = 3;
@@ -112,7 +113,7 @@ function App() {
       amount: parseFloat(newAmount),
       billing_cycle: newBillingCycle,
       category: newCategory,
-      next_payment_date: new Date().toISOString().split('T')[0]
+      next_payment_date: newPaymentDate || new Date().toISOString().split('T')[0]
     };
 
     const { data, error } = await supabase
@@ -126,6 +127,7 @@ function App() {
       setSubscriptions([data[0], ...subscriptions]);
       setNewName('');
       setNewAmount('');
+      setNewPaymentDate(new Date().toISOString().split('T')[0]);
       setIsModalOpen(false);
     }
   };
@@ -176,6 +178,18 @@ function App() {
     if (n.includes('discord')) return 'discord.com';
     if (n.includes('steam')) return 'steampowered.com';
     return `${n}.com`;
+  };
+
+  // Función para calcular días restantes hasta el próximo pago
+  const getDaysUntilPayment = (dateString) => {
+    if (!dateString) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const paymentDate = new Date(dateString);
+    paymentDate.setHours(0, 0, 0, 0);
+    const diffTime = paymentDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
   };
 
   // Función para descargar la tarjeta como imagen PNG
@@ -390,7 +404,7 @@ function App() {
           </div>
         </div>
 
-        {/* NUEVA SECCIÓN: Gráfica Histórica de Evolución de Gastos */}
+        {/* Gráfica Histórica de Evolución de Gastos */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -416,7 +430,6 @@ function App() {
             )}
           </div>
 
-          {/* Contenedor de la gráfica */}
           <div className="relative pt-6 pb-2">
             {!isPremium && (
               <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center text-center p-6 space-y-3 rounded-xl border border-slate-800">
@@ -436,7 +449,6 @@ function App() {
               </div>
             )}
 
-            {/* Gráfica de barras SVG interactiva */}
             <div className="h-44 w-full flex items-end justify-between gap-3 px-2 pt-6 pb-2 bg-slate-950/60 rounded-xl border border-slate-800/80">
               {chartData.map((item, index) => {
                 const heightPercentage = Math.round((item.amount / maxChartValue) * 100);
@@ -457,7 +469,7 @@ function App() {
           </div>
         </div>
 
-        {/* Lista de Suscripciones y Filtros */}
+        {/* Lista de Suscripciones, Alertas y Filtros */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-lg font-semibold text-slate-200">Tus Suscripciones Activas</h2>
@@ -468,8 +480,8 @@ function App() {
                 <button
                   onClick={() => {
                     const csvContent = "data:text/csv;charset=utf-8," 
-                      + ["Servicio,Precio,Ciclo,Categoría"].concat(
-                          subscriptions.map(s => `${s.name},${s.amount},${s.billing_cycle},${s.category}`)
+                      + ["Servicio,Precio,Ciclo,Categoría,Próximo Pago"].concat(
+                          subscriptions.map(s => `${s.name},${s.amount},${s.billing_cycle},${s.category},${s.next_payment_date || ''}`)
                         ).join("\n");
                     const encodedUri = encodeURI(csvContent);
                     const link = document.createElement("a");
@@ -518,8 +530,12 @@ function App() {
             <div className="space-y-3">
               {filteredSubscriptions.map((sub) => {
                 const domain = getServiceDomain(sub.name);
+                const daysLeft = getDaysUntilPayment(sub.next_payment_date);
+                const isUrgent = daysLeft !== null && daysLeft <= 3 && daysLeft >= 0;
+                const isPastDue = daysLeft !== null && daysLeft < 0;
+
                 return (
-                  <div key={sub.id} className="flex items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-800/60 hover:border-slate-700 transition-all">
+                  <div key={sub.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-800/60 hover:border-slate-700 transition-all gap-3">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-xl bg-white/5 border border-slate-800 flex items-center justify-center shrink-0 overflow-hidden p-2">
                         <img 
@@ -536,13 +552,34 @@ function App() {
                         </span>
                       </div>
                       <div>
-                        <h3 className="font-medium text-slate-200">{sub.name}</h3>
-                        <span className="inline-block text-xs px-2 py-0.5 mt-1 rounded-full bg-slate-800 text-slate-300">
-                          {sub.category}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-slate-200">{sub.name}</h3>
+                          {/* Alerta de Renovación Próxima (Disponible en ambas versiones) */}
+                          {isUrgent && (
+                            <span className="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                              <AlertTriangle size={10} /> Renueva en {daysLeft === 0 ? 'hoy' : `${daysLeft}d`}
+                            </span>
+                          )}
+                          {isPastDue && (
+                            <span className="bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                              <AlertTriangle size={10} /> Pago pendiente
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+                            {sub.category}
+                          </span>
+                          {sub.next_payment_date && (
+                            <span className="text-[11px] text-slate-500">
+                              Cobro: {sub.next_payment_date}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
+                    
+                    <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
                       <div className="text-right">
                         <span className="font-semibold text-slate-100 block">{Number(sub.amount).toFixed(2)} €</span>
                         <span className="text-xs text-slate-500 uppercase tracking-wider">{sub.billing_cycle}</span>
@@ -611,11 +648,9 @@ function App() {
                 </button>
               </div>
 
-              {/* El Cartel (Tarjeta PNG con marca de agua cruzada en diagonal para Lite) */}
               <div ref={cardRef} className="bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 p-6 rounded-2xl border border-emerald-500/30 text-center space-y-4 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
                 
-                {/* MARCA DE AGUA EN DIAGONAL (Solo se muestra si NO es Premium) */}
                 {!isPremium && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                     <span className="text-emerald-500/20 text-4xl sm:text-5xl font-black uppercase tracking-widest rotate-[-30deg] select-none">
@@ -644,7 +679,6 @@ function App() {
                   "Mantengo {subscriptions.length} suscripciones activas devorando mis ahorros."
                 </p>
 
-                {/* Pie dinámico limpio */}
                 <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500 font-mono relative z-20">
                   <span>subsplitter-media.vercel.app</span>
                   {isPremium && (
@@ -655,7 +689,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Botón de descarga de imagen */}
               <button
                 onClick={downloadCardAsImage}
                 className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold py-2.5 rounded-lg text-sm transition-all flex items-center justify-center gap-2 shadow-lg"
@@ -663,7 +696,6 @@ function App() {
                 <Download size={16} /> Descargar Cartel (PNG)
               </button>
 
-              {/* Botones de Compartir Directo en RRSS */}
               <div className="space-y-2 pt-2 border-t border-slate-800">
                 <span className="text-xs text-slate-400 block text-center mb-2">O comparte directamente un mensaje:</span>
                 
@@ -680,7 +712,7 @@ function App() {
                   <button
                     onClick={() => {
                       downloadCardAsImage();
-                      navigator.clipboard.writeText(`📉 Mis suscripciones suman ${totalMonthly.toFixed(2)}€ al mes (${hoursOfWork}h de trabajo). ¡Controlando mis fugas con SubSplitter Media! 🚀\n#FinanzasPersonal #SubSplitter #Ahorro`);
+                      navigator.clipboard.writeText(`📉 Mis suscripciones suman ${totalMonthly.toFixed(2)}€ al mes (${hoursOfWork}h de trabajo). ¡Controlando mis fugas con SubSplitter Media! 🚀\n#FinanzasPersonales #SubSplitter #Ahorro`);
                       alert('¡Cartel descargado y texto copiado al portapapeles! Ya puedes abrir Instagram y subir tu historia o publicación pegando el texto.');
                     }}
                     className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:opacity-90 text-white font-medium py-2 px-3 rounded-xl text-xs transition-all shadow-md"
@@ -739,6 +771,16 @@ function App() {
                     value={newAmount} 
                     onChange={(e) => setNewAmount(e.target.value)}
                     placeholder="9.99" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Próxima fecha de cobro</label>
+                  <input 
+                    type="date" 
+                    value={newPaymentDate} 
+                    onChange={(e) => setNewPaymentDate(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
                     required
                   />
