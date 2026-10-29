@@ -165,7 +165,7 @@ function App() {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 overflow-x-hidden">
         <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-2xl">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mb-2 text-center">
             SubSplitter Media
@@ -215,34 +215,34 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 overflow-x-hidden">
+      <div className="max-w-4xl mx-auto space-y-6 w-full">
         
-        {/* Cabecera */}
-        <header className="flex justify-between items-center border-b border-slate-800 pb-4">
+        {/* Cabecera Responsiva */}
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
               SubSplitter Media
             </h1>
             <p className="text-sm text-slate-400">Controla tus micro-pagos y fugas de dinero</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-start sm:justify-end">
             <button
               onClick={() => setIsShareModalOpen(true)}
-              className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-cyan-400 font-semibold px-3.5 py-2 rounded-lg transition-all text-sm"
+              className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-cyan-400 font-semibold px-3.5 py-2 rounded-lg transition-all text-sm shrink-0"
               title="Generar cartel para redes sociales"
             >
               <Share2 size={16} /> Cartel RRSS
             </button>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold px-4 py-2 rounded-lg transition-all text-sm"
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold px-4 py-2 rounded-lg transition-all text-sm shrink-0"
             >
               <PlusCircle size={18} /> Añadir Suscripción
             </button>
             <button
               onClick={handleLogout}
-              className="p-2 text-slate-400 hover:text-red-400 bg-slate-900 border border-slate-800 rounded-lg transition-colors"
+              className="p-2 text-slate-400 hover:text-red-400 bg-slate-900 border border-slate-800 rounded-lg transition-colors shrink-0"
               title="Cerrar sesión"
             >
               <LogOut size={18} />
@@ -311,7 +311,7 @@ function App() {
                 📥 Exportar CSV
               </button>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
                 <Filter size={14} className="text-slate-500 shrink-0" />
                 {['All', 'Streaming', 'IA', 'Software', 'Ocio'].map((cat) => (
                   <button
