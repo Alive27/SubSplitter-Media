@@ -404,7 +404,7 @@ function App() {
                 <Crown size={16} className="text-amber-400" /> SubSplitter Media Premium
               </h3>
               <p className="text-xs text-slate-300 mt-1">
-                Estás en la versión Lite ({subscriptions.length}/{LITE_LIMIT} suscripciones). Desbloquea gráficas históricas, exportación CSV, Suscripciones ilimitadas y más por solo 3,00 €.
+                Estás en la versión Lite. Desbloquea gráficas históricas, exportación CSV, Suscripciones ilimitadas y mucho más por solo 3,00 €.
               </p>
             </div>
             <a
