@@ -136,22 +136,23 @@ function App() {
     await supabase.auth.signOut();
   };
 
-  // Función para obtener el slug exacto del icono oficial en Simple Icons
-  const getServiceSlug = (name) => {
-    const n = name.toLowerCase().trim();
-    if (n.includes('netflix')) return 'netflix';
-    if (n.includes('spotify')) return 'spotify';
-    if (n.includes('disney')) return 'disneyplus';
-    if (n.includes('hbo') || n.includes('max')) return 'hbo';
-    if (n.includes('chatgpt') || n.includes('openai')) return 'openai';
-    if (n.includes('prime') || n.includes('amazon')) return 'amazonprime';
-    if (n.includes('youtube')) return 'youtube';
-    if (n.includes('apple')) return 'apple';
-    if (n.includes('twitch')) return 'twitch';
-    if (n.includes('github')) return 'github';
-    if (n.includes('discord')) return 'discord';
-    if (n.includes('steam')) return 'steam';
-    return null;
+  // Función inteligente para asociar dominios oficiales para los logotipos
+  const getServiceDomain = (name) => {
+    const n = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (n.includes('netflix')) return 'netflix.com';
+    if (n.includes('spotify')) return 'spotify.com';
+    if (n.includes('disney')) return 'disneyplus.com';
+    if (n.includes('hbo') || n.includes('max')) return 'max.com';
+    if (n.includes('chatgpt') || n.includes('openai')) return 'openai.com';
+    if (n.includes('gemini')) return 'google.com';
+    if (n.includes('prime') || n.includes('amazon')) return 'amazon.com';
+    if (n.includes('youtube')) return 'youtube.com';
+    if (n.includes('apple')) return 'apple.com';
+    if (n.includes('twitch')) return 'twitch.tv';
+    if (n.includes('github')) return 'github.com';
+    if (n.includes('discord')) return 'discord.com';
+    if (n.includes('steam')) return 'steampowered.com';
+    return `${n}.com`;
   };
 
   // Función para descargar la tarjeta como imagen PNG
@@ -353,22 +354,24 @@ function App() {
           ) : (
             <div className="space-y-3">
               {filteredSubscriptions.map((sub) => {
-                const iconSlug = getServiceSlug(sub.name);
+                const domain = getServiceDomain(sub.name);
                 return (
                   <div key={sub.id} className="flex items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-800/60 hover:border-slate-700 transition-all">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 p-2">
-                        {iconSlug ? (
-                          <img 
-                            src={`https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/${iconSlug}.svg`} 
-                            alt={sub.name} 
-                            className="w-full h-full filter invert brightness-200" 
-                          />
-                        ) : (
-                          <span className="font-bold text-emerald-400 text-sm">
-                            {sub.name.charAt(0).toUpperCase()}
-                          </span>
-                        )}
+                      <div className="w-10 h-10 rounded-xl bg-white/5 border border-slate-800 flex items-center justify-center shrink-0 overflow-hidden p-2">
+                        <img 
+                          src={`https://img.logo.dev/${domain}?token=pk_live_placeholder&size=120`} 
+                          alt={sub.name}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            // Si falla al cargar el logo, muestra la inicial con estilo elegante
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                        <span className="font-bold text-emerald-400 text-sm hidden items-center justify-center w-full h-full">
+                          {sub.name.charAt(0).toUpperCase()}
+                        </span>
                       </div>
                       <div>
                         <h3 className="font-medium text-slate-200">{sub.name}</h3>
@@ -497,7 +500,7 @@ function App() {
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-3 rounded-xl text-xs transition-all"
                   >
-                    <Send size={14} / > Facebook
+                    <Send size={14} /> Facebook
                   </a>
                 </div>
               </div>
@@ -518,7 +521,7 @@ function App() {
                     type="text" 
                     value={newName} 
                     onChange={(e) => setNewName(e.target.value)}
-                    placeholder="Ej: Netflix, Spotify, Disney Plus..." 
+                    placeholder="Ej: Netflix, ChatGPT, Disney Plus..." 
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
                     required
                   />
@@ -563,7 +566,7 @@ function App() {
                   <button 
                     type="button" 
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200"
+                    className="px-4 py-2 text-sm text-slate-400 hover:text-slate-250"
                   >
                     Cancelar
                   </button>
