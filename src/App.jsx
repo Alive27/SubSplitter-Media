@@ -29,7 +29,8 @@ function App() {
   const [newAmount, setNewAmount] = useState('');
   const [newCategory, setNewCategory] = useState('Streaming');
   const [newBillingCycle, setNewBillingCycle] = useState('monthly');
-  const [newPaymentDate, setNewPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  // Inicializamos la fecha en blanco o permitiendo que el usuario la elija libremente
+  const [newPaymentDate, setNewPaymentDate] = useState('');
 
   // Límite de suscripciones para usuarios de la versión Lite
   const LITE_LIMIT = 3;
@@ -80,7 +81,7 @@ function App() {
 
     if (data && !error) {
       setHourlyRate(data.hourly_rate || 12);
-      setIsPremium(data.is_premium || false); // <-- Aquí leemos correctamente si eres PRO
+      setIsPremium(data.is_premium || false);
       setEmailNotifications(data.email_notifications ?? true);
       setAlertDaysBefore(data.alert_days_before || 3);
       setBudgetLimit(data.budget_limit || 50);
@@ -129,6 +130,8 @@ function App() {
       setIsUpgradeModalOpen(true);
       return;
     }
+    // Al abrir el modal, dejamos la fecha vacía para obligar o invitar a elegir la real
+    setNewPaymentDate('');
     setIsModalOpen(true);
   };
 
@@ -148,7 +151,7 @@ function App() {
       amount: parseFloat(newAmount),
       billing_cycle: newBillingCycle,
       category: newCategory,
-      next_payment_date: newPaymentDate || new Date().toISOString().split('T')[0]
+      next_payment_date: newPaymentDate || null // Si no pone nada, se guarda como nulo sin forzar el día actual
     };
 
     const { data, error } = await supabase
@@ -162,7 +165,7 @@ function App() {
       setSubscriptions([data[0], ...subscriptions]);
       setNewName('');
       setNewAmount('');
-      setNewPaymentDate(new Date().toISOString().split('T')[0]);
+      setNewPaymentDate('');
       setIsModalOpen(false);
     }
   };
@@ -377,7 +380,7 @@ function App() {
           </div>
         </header>
 
-        {/* Banner de Presupuesto Excedido (Solo PRO) */}
+        {/* Banner de Presupuesto Excedido */}
         {isBudgetExceeded && (
           <div className="bg-red-950/40 border border-red-500/40 p-4 rounded-2xl flex items-center gap-3 shadow-lg">
             <div className="p-2 bg-red-500/10 rounded-xl text-red-400 shrink-0">
@@ -624,9 +627,13 @@ function App() {
                           <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
                             {sub.category}
                           </span>
-                          {sub.next_payment_date && (
+                          {sub.next_payment_date ? (
                             <span className="text-[11px] text-slate-500">
                               Cobro: {sub.next_payment_date}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-slate-600 italic">
+                              Sin fecha de cobro especificada
                             </span>
                           )}
                         </div>
@@ -926,7 +933,7 @@ function App() {
           </div>
         )}
 
-        {/* Modal para añadir suscripción */}
+        {/* Modal para añadir suscripción con fecha personalizada opcional */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
             <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl">
@@ -956,14 +963,14 @@ function App() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Próxima fecha de cobro</label>
+                  <label className="block text-xs text-slate-400 mb-1">Próxima fecha de cobro (Opcional)</label>
                   <input 
                     type="date" 
                     value={newPaymentDate} 
                     onChange={(e) => setNewPaymentDate(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
-                    required
                   />
+                  <p className="text-[10px] text-slate-500 mt-1">Elige el día exacto en que te hacen el cargo para calcular las alertas.</p>
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Ciclo de facturación</label>
