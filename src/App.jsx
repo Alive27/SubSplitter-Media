@@ -18,10 +18,15 @@ function App() {
   // Estados para modales
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false); // NUEVO: Modal de límite Lite alcanzado
+  
   const [newName, setNewName] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newCategory, setNewCategory] = useState('Streaming');
   const [newBillingCycle, setNewBillingCycle] = useState('monthly');
+
+  // Límite de suscripciones para usuarios de la versión Lite
+  const LITE_LIMIT = 3;
 
   // Referencia para capturar la tarjeta como imagen
   const cardRef = useRef(null);
@@ -82,9 +87,25 @@ function App() {
       .eq('id', session.user.id);
   };
 
+  // NUEVO: Validación previa antes de abrir el modal de añadir
+  const handleOpenAddModal = () => {
+    if (!isPremium && subscriptions.length >= LITE_LIMIT) {
+      setIsUpgradeModalOpen(true); // Muestra el aviso si supera el límite Lite
+      return;
+    }
+    setIsModalOpen(true);
+  };
+
   const handleAddSubscription = async (e) => {
     e.preventDefault();
     if (!newName || !newAmount || !session) return;
+
+    // Doble verificación por seguridad
+    if (!isPremium && subscriptions.length >= LITE_LIMIT) {
+      setIsModalOpen(false);
+      setIsUpgradeModalOpen(true);
+      return;
+    }
 
     const newSub = {
       user_id: session.user.id,
@@ -248,9 +269,13 @@ function App() {
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
                   SubSplitter Media
                 </h1>
-                {isPremium && (
+                {isPremium ? (
                   <span className="bg-amber-400/10 border border-amber-400/30 text-amber-400 text-xs px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
                     <Crown size={12} /> PRO
+                  </span>
+                ) : (
+                  <span className="bg-slate-800 border border-slate-700 text-slate-300 text-xs px-2.5 py-0.5 rounded-full font-medium">
+                    LITE ({subscriptions.length}/{LITE_LIMIT})
                   </span>
                 )}
               </div>
@@ -266,8 +291,8 @@ function App() {
               <Share2 size={16} /> Cartel RRSS
             </button>
             <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold px-4 py-2 rounded-lg transition-all text-sm shrink-0"
+              onClick={handleOpenAddModal}
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold px-4 py-2 rounded-lg transition-all text-sm shrink-0 shadow-lg"
             >
               <PlusCircle size={18} /> Añadir Suscripción
             </button>
@@ -281,7 +306,7 @@ function App() {
           </div>
         </header>
 
-        {/* Banner de Promoción Premium (Solo se muestra si NO es Premium) */}
+        {/* Banner de Promoción Premium / Estado */}
         {!isPremium ? (
           <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-cyan-950/60 border border-emerald-500/30 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
@@ -290,7 +315,7 @@ function App() {
                 <Crown size={16} className="text-amber-400" /> SubSplitter Media Premium
               </h3>
               <p className="text-xs text-slate-300 mt-1">
-                Desbloquea suscripciones ilimitadas, exportación avanzada y carteles Pro sin marcas de agua por solo 3,00 €/mes.
+                Estás en la versión Lite ({subscriptions.length}/{LITE_LIMIT} suscripciones). Desbloquea suscripciones ilimitadas por solo 3,00 €/mes.
               </p>
             </div>
             <a
@@ -444,6 +469,38 @@ function App() {
           )}
         </div>
 
+        {/* NUEVO: Modal de Límite Lite Alcanzado */}
+        {isUpgradeModalOpen && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-slate-900 border border-amber-500/30 p-6 rounded-2xl max-w-md w-full text-center shadow-2xl space-y-4">
+              <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto text-amber-400 text-xl font-bold">
+                ⭐
+              </div>
+              <h3 className="text-xl font-bold text-white">Límite de la versión Lite alcanzado</h3>
+              <p className="text-slate-300 text-sm">
+                Has alcanzado el máximo de {LITE_LIMIT} suscripciones gratuitas. Desbloquea **Suscripciones Ilimitadas** y todas las ventajas PRO haciendo una actualización rápida.
+              </p>
+              
+              <div className="flex gap-3 justify-center pt-2">
+                <button 
+                  onClick={() => setIsUpgradeModalOpen(false)}
+                  className="px-4 py-2.5 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 text-sm transition-all"
+                >
+                  Cancelar
+                </button>
+                <a 
+                  href="https://buy.stripe.com/test_4gM14ob841QUb8E7tD2B200" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg"
+                >
+                  ¡Pasarse a PRO! 🚀
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Modal para Cartel y Redes Sociales */}
         {isShareModalOpen && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -503,7 +560,6 @@ function App() {
                 <span className="text-xs text-slate-400 block text-center mb-2">O comparte directamente un mensaje:</span>
                 
                 <div className="grid grid-cols-2 gap-2">
-                  {/* Botón X (Twitter) */}
                   <a
                     href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`📉 Mis suscripciones suman ${totalMonthly.toFixed(2)}€ (${hoursOfWork}h de trabajo al mes). ¡Controlando mis fugas de dinero con SubSplitter Media! 🚀`)}`}
                     target="_blank"
@@ -513,7 +569,6 @@ function App() {
                     <Globe size={14} /> Compartir en X
                   </a>
 
-                  {/* Botón Instagram (Descarga + Copia de Texto) */}
                   <button
                     onClick={() => {
                       downloadCardAsImage();
@@ -527,7 +582,6 @@ function App() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                  {/* Botón WhatsApp */}
                   <a
                     href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`📉 ¡Mira mis gastos en suscripciones! Gasto ${totalMonthly.toFixed(2)}€ al mes (${hoursOfWork} horas de trabajo). Descubre SubSplitter Media.`)}`}
                     target="_blank"
@@ -537,7 +591,6 @@ function App() {
                     <MessageCircle size={14} /> WhatsApp
                   </a>
 
-                  {/* Botón Facebook */}
                   <a
                     href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://subsplitter-media.vercel.app')}`}
                     target="_blank"
