@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Crown, CheckCircle2, TrendingUp, BarChart3, AlertTriangle, Bell } from 'lucide-react';
+import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Crown, CheckCircle2, TrendingUp, BarChart3, AlertTriangle, Bell, Settings, X } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { toPng } from 'html-to-image';
 
@@ -20,6 +20,7 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false); // Nuevo modal de ajustes
   
   const [newName, setNewName] = useState('');
   const [newAmount, setNewAmount] = useState('');
@@ -328,6 +329,14 @@ function App() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-start sm:justify-end">
+            {/* Botón de Engranaje (Ajustes PRO y Opciones) */}
+            <button
+              onClick={() => setIsSettingsModalOpen(true)}
+              className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-emerald-400 rounded-lg transition-all shrink-0 shadow-sm"
+              title="Ajustes y Opciones PRO"
+            >
+              <Settings size={18} />
+            </button>
             <button
               onClick={() => setIsShareModalOpen(true)}
               className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-cyan-400 font-semibold px-3.5 py-2 rounded-lg transition-all text-sm shrink-0"
@@ -418,28 +427,6 @@ function App() {
               />
             </div>
           </div>
-        </div>
-
-        {/* Panel de Preferencias de Notificaciones por Correo */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl shrink-0">
-              <Bell size={20} />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-slate-200">Alertas de Renovación por Email</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Recibe un correo electrónico automático el día que tus suscripciones se vayan a cobrar.</p>
-            </div>
-          </div>
-          <label className="flex items-center gap-2 cursor-pointer shrink-0 bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl">
-            <span className="text-xs text-slate-300 font-medium">Activar correos</span>
-            <input 
-              type="checkbox" 
-              checked={emailNotifications} 
-              onChange={(e) => handleToggleNotifications(e.target.checked)}
-              className="w-4 h-4 accent-emerald-500 rounded bg-slate-900 border-slate-700 cursor-pointer"
-            />
-          </label>
         </div>
 
         {/* Gráfica Histórica de Evolución de Gastos */}
@@ -636,6 +623,82 @@ function App() {
             </div>
           )}
         </div>
+
+        {/* Modal de Ajustes y Opciones PRO (Engranaje) */}
+        {isSettingsModalOpen && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-5">
+              <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 className="text-lg font-bold flex items-center gap-2 text-white">
+                  <Settings size={20} className="text-emerald-400" /> Ajustes y Opciones PRO
+                </h3>
+                <button 
+                  onClick={() => setIsSettingsModalOpen(false)}
+                  className="text-slate-400 hover:text-slate-200"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Opción 1: Notificaciones por correo */}
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                      <Bell size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-200">Avisos por Email</h4>
+                      <p className="text-[11px] text-slate-400">Recibe recordatorios automáticos de cobro.</p>
+                    </div>
+                  </div>
+                  <input 
+                    type="checkbox" 
+                    checked={emailNotifications} 
+                    onChange={(e) => handleToggleNotifications(e.target.checked)}
+                    className="w-4 h-4 accent-emerald-500 rounded bg-slate-900 border-slate-700 cursor-pointer"
+                  />
+                </div>
+
+                {/* Opción 2: Estado de Cuenta y Funciones PRO */}
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400">Estado de cuenta:</span>
+                    {isPremium ? (
+                      <span className="text-xs bg-amber-400/10 text-amber-400 border border-amber-400/30 px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                        <Crown size={12} /> PRO Activo
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-full font-medium">
+                        Versión Lite
+                      </span>
+                    )}
+                  </div>
+                  {!isPremium && (
+                    <button
+                      onClick={() => {
+                        setIsSettingsModalOpen(false);
+                        setIsUpgradeModalOpen(true);
+                      }}
+                      className="w-full mt-2 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-1.5"
+                    >
+                      <Crown size={14} /> Pasarse a PRO (3,00 €/mes)
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button 
+                  onClick={() => setIsSettingsModalOpen(false)}
+                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs transition-all"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal de Límite Lite / Funciones PRO Alcanzado */}
         {isUpgradeModalOpen && (
