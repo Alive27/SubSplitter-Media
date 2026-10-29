@@ -294,7 +294,7 @@ function App() {
               </p>
             </div>
             <a
-              href="https://buy.stripe.com/4gM14ob841QUb8E7tD2B200"
+              href="https://buy.stripe.com/test_4gM14ob841QUb8E7tD2B200"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-5 py-2.5 rounded-xl text-xs transition-all shrink-0 shadow-lg text-center"
