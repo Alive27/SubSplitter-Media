@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Crown, CheckCircle2, TrendingUp, BarChart3, AlertTriangle, Bell, Settings, X } from 'lucide-react';
+import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Crown, CheckCircle2, TrendingUp, BarChart3, AlertTriangle, Bell, Settings, X, ShieldAlert } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { toPng } from 'html-to-image';
 
@@ -9,6 +9,9 @@ function App() {
   const [hourlyRate, setHourlyRate] = useState(12);
   const [isPremium, setIsPremium] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
+  const [alertDaysBefore, setAlertDaysBefore] = useState(3);
+  const [budgetLimit, setBudgetLimit] = useState(50);
+  const [currency, setCurrency] = useState('€');
   const [selectedCategory, setSelectedCategory] = useState('All');
   
   // Estados para autenticación
@@ -20,7 +23,7 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false); // Modal de ajustes y engranaje
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   
   const [newName, setNewName] = useState('');
   const [newAmount, setNewAmount] = useState('');
@@ -71,7 +74,7 @@ function App() {
   const fetchProfile = async (userId) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('hourly_rate, is_premium, email_notifications')
+      .select('hourly_rate, is_premium, email_notifications, alert_days_before, budget_limit, currency')
       .eq('id', userId)
       .single();
 
@@ -79,6 +82,9 @@ function App() {
       setHourlyRate(data.hourly_rate || 12);
       setIsPremium(data.is_premium || false);
       setEmailNotifications(data.email_notifications ?? true);
+      setAlertDaysBefore(data.alert_days_before || 3);
+      setBudgetLimit(data.budget_limit || 50);
+      setCurrency(data.currency || '€');
     }
   };
 
@@ -95,14 +101,26 @@ function App() {
     setEmailNotifications(newValue);
     if (!session) return;
     
-    const { error } = await supabase
+    await supabase
       .from('profiles')
       .update({ email_notifications: newValue })
       .eq('id', session.user.id);
+  };
 
-    if (error) {
-      console.error('Error al actualizar las preferencias de notificación:', error);
-    }
+  const handleUpdateProSettings = async (field, value) => {
+    if (!isPremium) return;
+    if (field === 'alertDaysBefore') setAlertDaysBefore(value);
+    if (field === 'budgetLimit') setBudgetLimit(value);
+    if (field === 'currency') setCurrency(value);
+
+    await supabase
+      .from('profiles')
+      .update({ 
+        alert_days_before: field === 'alertDaysBefore' ? value : alertDaysBefore,
+        budget_limit: field === 'budgetLimit' ? value : budgetLimit,
+        currency: field === 'currency' ? value : currency
+      })
+      .eq('id', session.user.id);
   };
 
   // Validación previa antes de abrir el modal de añadir
@@ -231,6 +249,7 @@ function App() {
 
   const totalYearly = totalMonthly * 12;
   const hoursOfWork = hourlyRate > 0 ? (totalMonthly / hourlyRate).toFixed(1) : 0;
+  const isBudgetExceeded = isPremium && budgetLimit > 0 && totalMonthly > budgetLimit;
 
   const filteredSubscriptions = selectedCategory === 'All' 
     ? subscriptions 
@@ -307,7 +326,7 @@ function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 overflow-x-hidden">
       <div className="max-w-4xl mx-auto space-y-6 w-full">
         
-        {/* Cabecera Responsiva con el botón de Ajustes (Engranaje) bien visible */}
+        {/* Cabecera Responsiva */}
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
           <div className="flex items-center gap-3">
             <div>
@@ -330,7 +349,6 @@ function App() {
           </div>
           
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-start sm:justify-end">
-            {/* BOTÓN DE ENGRANAJE VISIBLE */}
             <button
               onClick={() => setIsSettingsModalOpen(true)}
               className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-semibold px-3 py-2 rounded-lg transition-all text-sm shrink-0 shadow-sm"
@@ -364,6 +382,21 @@ function App() {
           </div>
         </header>
 
+        {/* Banner de Presupuesto Excedido (Solo PRO) */}
+        {isBudgetExceeded && (
+          <div className="bg-red-950/40 border border-red-500/40 p-4 rounded-2xl flex items-center gap-3 shadow-lg">
+            <div className="p-2 bg-red-500/10 rounded-xl text-red-400 shrink-0">
+              <ShieldAlert size={20} />
+            </div>
+            <div>
+              <h4 className="font-semibold text-red-400 text-sm">⚠️ ¡Alerta de Presupuesto PRO Superado!</h4>
+              <p className="text-xs text-slate-300">
+                Tu gasto mensual ({totalMonthly.toFixed(2)} {currency}) ha superado el límite fijado de {budgetLimit} {currency}.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Banner de Promoción Premium / Estado */}
         {!isPremium ? (
           <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-cyan-950/60 border border-emerald-500/30 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl relative overflow-hidden">
@@ -392,7 +425,7 @@ function App() {
             </div>
             <div>
               <h4 className="font-semibold text-amber-400 text-sm">Suscripción Premium Activa</h4>
-              <p className="text-xs text-slate-300">Disfrutas de analíticas gráficas y todas las ventajas PRO sin restricciones.</p>
+              <p className="text-xs text-slate-300">Disfrutas de analíticas gráficas, alertas personalizadas y control total PRO.</p>
             </div>
           </div>
         )}
@@ -402,13 +435,13 @@ function App() {
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
             <span className="text-sm text-slate-400">Gasto Estimado Mensual</span>
             <div className="text-3xl font-bold text-emerald-400 mt-1">
-              {totalMonthly.toFixed(2)} € <span className="text-xs font-normal text-slate-500">/ mes</span>
+              {totalMonthly.toFixed(2)} {currency} <span className="text-xs font-normal text-slate-500">/ mes</span>
             </div>
           </div>
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
             <span className="text-sm text-slate-400">Proyección Anual</span>
             <div className="text-3xl font-bold text-cyan-400 mt-1">
-              {totalYearly.toFixed(2)} € <span className="text-xs font-normal text-slate-500">/ año</span>
+              {totalYearly.toFixed(2)} {currency} <span className="text-xs font-normal text-slate-500">/ año</span>
             </div>
           </div>
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg flex flex-col justify-between">
@@ -484,7 +517,7 @@ function App() {
                 return (
                   <div key={index} className="flex-1 flex flex-col items-center h-full justify-end group relative">
                     <div className="absolute -top-8 bg-slate-800 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-slate-700 shadow-lg">
-                      {item.amount.toFixed(2)} €
+                      {item.amount.toFixed(2)} {currency}
                     </div>
                     <div 
                       style={{ height: `${Math.max(heightPercentage, 12)}%` }}
@@ -610,7 +643,7 @@ function App() {
                     
                     <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
                       <div className="text-right">
-                        <span className="font-semibold text-slate-100 block">{Number(sub.amount).toFixed(2)} €</span>
+                        <span className="font-semibold text-slate-100 block">{Number(sub.amount).toFixed(2)} {currency}</span>
                         <span className="text-xs text-slate-500 uppercase tracking-wider">{sub.billing_cycle}</span>
                       </div>
                       <button 
@@ -645,7 +678,7 @@ function App() {
               </div>
 
               <div className="space-y-4">
-                {/* Opción 1: Notificaciones por correo */}
+                {/* Opción 1: Notificaciones por correo (General) */}
                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
@@ -664,30 +697,86 @@ function App() {
                   />
                 </div>
 
-                {/* Opción 2: Estado de Cuenta y Funciones PRO */}
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-400">Estado de cuenta:</span>
-                    {isPremium ? (
-                      <span className="text-xs bg-amber-400/10 text-amber-400 border border-amber-400/30 px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
-                        <Crown size={12} /> PRO Activo
-                      </span>
-                    ) : (
-                      <span className="text-xs bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-full font-medium">
-                        Versión Lite
-                      </span>
-                    )}
+                {/* OPCIONES EXCLUSIVAS PRO */}
+                {isPremium ? (
+                  <div className="space-y-3 bg-amber-950/20 p-4 rounded-xl border border-amber-500/30">
+                    <div className="flex items-center gap-1.5 text-amber-400 text-xs font-semibold">
+                      <Crown size={14} /> Controles Avanzados PRO
+                    </div>
+
+                    {/* Antelación del aviso */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-300">Antelación de alerta:</span>
+                      <select 
+                        value={alertDaysBefore} 
+                        onChange={(e) => handleUpdateProSettings('alertDaysBefore', Number(e.target.value))}
+                        className="bg-slate-900 border border-slate-800 text-xs text-slate-200 rounded px-2 py-1 focus:outline-none focus:border-amber-400"
+                      >
+                        <option value={1}>1 día antes</option>
+                        <option value={3}>3 días antes</option>
+                        <option value={7}>1 semana antes</option>
+                      </select>
+                    </div>
+
+                    {/* Límite de presupuesto */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-300">Tope de gasto mensual:</span>
+                      <div className="flex items-center gap-1">
+                        <input 
+                          type="number" 
+                          value={budgetLimit} 
+                          onChange={(e) => handleUpdateProSettings('budgetLimit', Number(e.target.value))}
+                          className="w-16 bg-slate-900 border border-slate-800 text-xs text-right text-slate-200 rounded px-2 py-1 focus:outline-none focus:border-amber-400"
+                        />
+                        <span className="text-xs text-slate-400">{currency}</span>
+                      </div>
+                    </div>
+
+                    {/* Moneda Base */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-300">Moneda preferida:</span>
+                      <select 
+                        value={currency} 
+                        onChange={(e) => handleUpdateProSettings('currency', e.target.value)}
+                        className="bg-slate-900 border border-slate-800 text-xs text-slate-200 rounded px-2 py-1 focus:outline-none focus:border-amber-400"
+                      >
+                        <option value="€">Euros (€)</option>
+                        <option value="$">Dólares ($)</option>
+                        <option value="£">Libras (£)</option>
+                      </select>
+                    </div>
                   </div>
-                  {!isPremium && (
+                ) : (
+                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 text-center space-y-2">
+                    <span className="text-xs text-amber-400 font-semibold flex items-center justify-center gap-1">
+                      <Crown size={12} /> Desbloquea ajustes PRO
+                    </span>
+                    <p className="text-[11px] text-slate-400">
+                      Personaliza la antelación de tus avisos de correo, fija topes de presupuesto y cambia de divisa haciéndote PRO.
+                    </p>
                     <button
                       onClick={() => {
                         setIsSettingsModalOpen(false);
                         setIsUpgradeModalOpen(true);
                       }}
-                      className="w-full mt-2 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-1.5"
+                      className="w-full mt-1 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition-all shadow-md"
                     >
-                      <Crown size={14} /> Pasarse a PRO (3,00 €/mes)
+                      Pasarse a PRO (3,00 €/mes) 🚀
                     </button>
+                  </div>
+                )}
+
+                {/* Estado de Cuenta */}
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Estado de cuenta:</span>
+                  {isPremium ? (
+                    <span className="text-xs bg-amber-400/10 text-amber-400 border border-amber-400/30 px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                      <Crown size={12} /> PRO Activo
+                    </span>
+                  ) : (
+                    <span className="text-xs bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-full font-medium">
+                      Versión Lite
+                    </span>
                   )}
                 </div>
               </div>
@@ -697,7 +786,7 @@ function App() {
                   onClick={() => setIsSettingsModalOpen(false)}
                   className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs transition-all"
                 >
-                  Cerrar
+                  Guardar y Cerrar
                 </button>
               </div>
             </div>
@@ -713,7 +802,7 @@ function App() {
               </div>
               <h3 className="text-xl font-bold text-white">Función exclusiva PRO</h3>
               <p className="text-slate-300 text-sm">
-                Has alcanzado el límite de {LITE_LIMIT} suscripciones gratuitas o intentado acceder a gráficas avanzadas. ¡Hazte PRO para desbloquear todo sin restricciones!
+                Has alcanzado el límite de {LITE_LIMIT} suscripciones gratuitas o intentado acceder a analíticas avanzadas. ¡Hazte PRO para desbloquear todo sin restricciones!
               </p>
               
               <div className="flex gap-3 justify-center pt-2">
@@ -772,7 +861,7 @@ function App() {
                 <div className="grid grid-cols-2 gap-3 py-2">
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                     <span className="text-xs text-slate-400 block">Gasto Mensual</span>
-                    <span className="text-lg font-bold text-emerald-400">{totalMonthly.toFixed(2)} €</span>
+                    <span className="text-lg font-bold text-emerald-400">{totalMonthly.toFixed(2)} {currency}</span>
                   </div>
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                     <span className="text-xs text-slate-400 block">Impacto Laboral</span>
@@ -806,7 +895,7 @@ function App() {
                 
                 <div className="grid grid-cols-2 gap-2">
                   <a
-                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`📉 Mis suscripciones suman ${totalMonthly.toFixed(2)}€ (${hoursOfWork}h de trabajo al mes). ¡Controlando mis fugas de dinero con SubSplitter Media! 🚀`)}`}
+                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`📉 Mis suscripciones suman ${totalMonthly.toFixed(2)}${currency} (${hoursOfWork}h de trabajo al mes). ¡Controlando mis fugas de dinero con SubSplitter Media! 🚀`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 bg-black hover:bg-slate-950 border border-slate-800 text-white font-medium py-2 px-3 rounded-xl text-xs transition-all"
@@ -817,7 +906,7 @@ function App() {
                   <button
                     onClick={() => {
                       downloadCardAsImage();
-                      navigator.clipboard.writeText(`📉 Mis suscripciones suman ${totalMonthly.toFixed(2)}€ al mes (${hoursOfWork}h de trabajo). ¡Controlando mis fugas con SubSplitter Media! 🚀\n#FinanzasPersonales #SubSplitter #Ahorro`);
+                      navigator.clipboard.writeText(`📉 Mis suscripciones suman ${totalMonthly.toFixed(2)}${currency} al mes (${hoursOfWork}h de trabajo). ¡Controlando mis fugas con SubSplitter Media! 🚀\n#FinanzasPersonales #SubSplitter #Ahorro`);
                       alert('¡Cartel descargado y texto copiado al portapapeles! Ya puedes abrir Instagram y subir tu historia o publicación pegando el texto.');
                     }}
                     className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:opacity-90 text-white font-medium py-2 px-3 rounded-xl text-xs transition-all shadow-md"
@@ -828,7 +917,7 @@ function App() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <a
-                    href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`📉 ¡Mira mis gastos en suscripciones! Gasto ${totalMonthly.toFixed(2)}€ al mes (${hoursOfWork} horas de trabajo). Descubre SubSplitter Media.`)}`}
+                    href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`📉 ¡Mira mis gastos en suscripciones! Gasto ${totalMonthly.toFixed(2)}${currency} al mes (${hoursOfWork} horas de trabajo). Descubre SubSplitter Media.`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 px-3 rounded-xl text-xs transition-all"
@@ -869,7 +958,7 @@ function App() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Precio (€)</label>
+                  <label className="block text-xs text-slate-400 mb-1">Precio ({currency})</label>
                   <input 
                     type="number" 
                     step="0.01" 
