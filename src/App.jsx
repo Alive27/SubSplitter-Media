@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera } from 'lucide-react';
+import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Crown } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { toPng } from 'html-to-image';
 
@@ -20,7 +20,7 @@ function App() {
   const [newName, setNewName] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newCategory, setNewCategory] = useState('Streaming');
-  const [newBillingCycle, setNewBillingCycle] = useState('Mensual');
+  const [newBillingCycle, setNewBillingCycle] = useState('monthly');
 
   // Referencia para capturar la tarjeta como imagen
   const cardRef = useRef(null);
@@ -269,6 +269,27 @@ function App() {
           </div>
         </header>
 
+        {/* Banner de Promoción Premium con Enlace Real de Stripe */}
+        <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-cyan-950/60 border border-emerald-500/30 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+          <div>
+            <h3 className="font-bold text-emerald-400 text-sm flex items-center gap-1.5">
+              <Crown size={16} className="text-amber-400" /> SubSplitter Media Premium
+            </h3>
+            <p className="text-xs text-slate-300 mt-1">
+              Desbloquea suscripciones ilimitadas, exportación avanzada y carteles Pro sin marcas de agua por solo 3,00 €/mes.
+            </p>
+          </div>
+          <a
+            href="https://buy.stripe.com/4gM14ob841QUb8E7tD2B200"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-5 py-2.5 rounded-xl text-xs transition-all shrink-0 shadow-lg text-center"
+          >
+            Obtener Premium 🚀
+          </a>
+        </div>
+
         {/* Tarjetas de Resumen & Métrica de Realidad */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
@@ -364,7 +385,6 @@ function App() {
                           alt={sub.name}
                           className="w-full h-full object-contain"
                           onError={(e) => {
-                            // Si falla al cargar el logo, muestra la inicial con estilo elegante
                             e.target.style.display = 'none';
                             e.target.nextSibling.style.display = 'flex';
                           }}
@@ -566,7 +586,7 @@ function App() {
                   <button 
                     type="button" 
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 text-sm text-slate-400 hover:text-slate-250"
+                    className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200"
                   >
                     Cancelar
                   </button>
