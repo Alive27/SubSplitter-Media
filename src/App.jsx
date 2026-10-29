@@ -384,7 +384,7 @@ function App() {
               <ShieldAlert size={20} />
             </div>
             <div>
-              <h4 className="font-semibold text-red-400 text-sm">⚠️ ¡Alerta de Presupuesto PRO Superado!</h4>
+              <h4 className="font-semibold text-red-400 text-sm">⚠️ ¡Alerta de Presupuesto Superado!</h4>
               <p className="text-xs text-slate-300">
                 Tu gasto mensual ({totalMonthly.toFixed(2)} {currency}) ha superado el límite fijado de {budgetLimit} {currency}.
               </p>
