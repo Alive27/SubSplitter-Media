@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Crown, CheckCircle2, TrendingUp, BarChart3, AlertTriangle } from 'lucide-react';
+import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Crown, CheckCircle2, TrendingUp, BarChart3, AlertTriangle, Bell } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { toPng } from 'html-to-image';
 
@@ -8,6 +8,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [hourlyRate, setHourlyRate] = useState(12);
   const [isPremium, setIsPremium] = useState(false);
+  const [emailNotifications, setEmailNotifications] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   
   // Estados para autenticación
@@ -69,13 +70,14 @@ function App() {
   const fetchProfile = async (userId) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('hourly_rate, is_premium')
+      .select('hourly_rate, is_premium, email_notifications')
       .eq('id', userId)
       .single();
 
     if (data && !error) {
       setHourlyRate(data.hourly_rate || 12);
       setIsPremium(data.is_premium || false);
+      setEmailNotifications(data.email_notifications ?? true);
     }
   };
 
@@ -86,6 +88,20 @@ function App() {
       .from('profiles')
       .update({ hourly_rate: newRate })
       .eq('id', session.user.id);
+  };
+
+  const handleToggleNotifications = async (newValue) => {
+    setEmailNotifications(newValue);
+    if (!session) return;
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ email_notifications: newValue })
+      .eq('id', session.user.id);
+
+    if (error) {
+      console.error('Error al actualizar las preferencias de notificación:', error);
+    }
   };
 
   // Validación previa antes de abrir el modal de añadir
@@ -404,6 +420,28 @@ function App() {
           </div>
         </div>
 
+        {/* Panel de Preferencias de Notificaciones por Correo */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl shrink-0">
+              <Bell size={20} />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-200">Alertas de Renovación por Email</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Recibe un correo electrónico automático el día que tus suscripciones se vayan a cobrar.</p>
+            </div>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer shrink-0 bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl">
+            <span className="text-xs text-slate-300 font-medium">Activar correos</span>
+            <input 
+              type="checkbox" 
+              checked={emailNotifications} 
+              onChange={(e) => handleToggleNotifications(e.target.checked)}
+              className="w-4 h-4 accent-emerald-500 rounded bg-slate-900 border-slate-700 cursor-pointer"
+            />
+          </label>
+        </div>
+
         {/* Gráfica Histórica de Evolución de Gastos */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4 relative overflow-hidden">
           <div className="flex items-center justify-between">
@@ -554,7 +592,7 @@ function App() {
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-medium text-slate-200">{sub.name}</h3>
-                          {/* Alerta de Renovación Próxima (Disponible en ambas versiones) */}
+                          {/* Alerta de Renovación Próxima */}
                           {isUrgent && (
                             <span className="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
                               <AlertTriangle size={10} /> Renueva en {daysLeft === 0 ? 'hoy' : `${daysLeft}d`}
