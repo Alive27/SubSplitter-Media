@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Crown, CheckCircle2, TrendingUp, BarChart3, AlertTriangle, Bell, Settings, X, ShieldAlert } from 'lucide-react';
+import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Crown, CheckCircle2, TrendingUp, BarChart3, AlertTriangle, Bell, Settings, X, ShieldAlert, MessageSquarePlus } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { toPng } from 'html-to-image';
 
@@ -24,16 +24,24 @@ function App() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   
   const [newName, setNewName] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newCategory, setNewCategory] = useState('Streaming');
   const [newBillingCycle, setNewBillingCycle] = useState('monthly');
-  // Inicializamos la fecha en blanco o permitiendo que el usuario la elija libremente
   const [newPaymentDate, setNewPaymentDate] = useState('');
+
+  // Estados para Feedback / Sugerencias
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackType, setFeedbackType] = useState('bug');
+  const [isSendingFeedback, setIsSendingFeedback] = useState(false);
 
   // Límite de suscripciones para usuarios de la versión Lite
   const LITE_LIMIT = 3;
+
+  // Enlace oficial de pago único de Stripe
+  const STRIPE_CHECKOUT_URL = 'https://buy.stripe.com/dRm4gA0tq2UYekQg092B201';
 
   // Referencia para capturar la tarjeta como imagen
   const cardRef = useRef(null);
@@ -124,13 +132,11 @@ function App() {
       .eq('id', session.user.id);
   };
 
-  // Validación previa antes de abrir el modal de añadir
   const handleOpenAddModal = () => {
     if (!isPremium && subscriptions.length >= LITE_LIMIT) {
       setIsUpgradeModalOpen(true);
       return;
     }
-    // Al abrir el modal, dejamos la fecha vacía para obligar o invitar a elegir la real
     setNewPaymentDate('');
     setIsModalOpen(true);
   };
@@ -151,7 +157,7 @@ function App() {
       amount: parseFloat(newAmount),
       billing_cycle: newBillingCycle,
       category: newCategory,
-      next_payment_date: newPaymentDate || null // Si no pone nada, se guarda como nulo sin forzar el día actual
+      next_payment_date: newPaymentDate || null
     };
 
     const { data, error } = await supabase
@@ -197,6 +203,32 @@ function App() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+  };
+
+  const handleSendFeedback = async (e) => {
+    e.preventDefault();
+    if (!feedbackText.trim()) return;
+
+    setIsSendingFeedback(true);
+
+    const { error } = await supabase.from('feedback').insert([
+      {
+        user_id: session?.user?.id || null,
+        message: feedbackText,
+        type: feedbackType
+      }
+    ]);
+
+    setIsSendingFeedback(false);
+
+    if (error) {
+      console.error('Error al enviar sugerencia:', error);
+      alert('Hubo un error al enviar el reporte. Inténtalo de nuevo.');
+    } else {
+      alert('¡Muchas gracias! Tu mensaje ha sido enviado correctamente.');
+      setFeedbackText('');
+      setIsFeedbackModalOpen(false);
+    }
   };
 
   const getServiceDomain = (name) => {
@@ -348,6 +380,14 @@ function App() {
           
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-start sm:justify-end">
             <button
+              onClick={() => setIsFeedbackModalOpen(true)}
+              className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-semibold px-3 py-2 rounded-lg transition-all text-sm shrink-0 shadow-sm"
+              title="Reportar un error o sugerir mejora"
+            >
+              <MessageSquarePlus size={16} className="text-cyan-400" /> Sugerencias
+            </button>
+
+            <button
               onClick={() => setIsSettingsModalOpen(true)}
               className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-semibold px-3 py-2 rounded-lg transition-all text-sm shrink-0 shadow-sm"
               title="Ajustes y Opciones PRO"
@@ -404,11 +444,11 @@ function App() {
                 <Crown size={16} className="text-amber-400" /> SubSplitter Media Premium
               </h3>
               <p className="text-xs text-slate-300 mt-1">
-                Estás en la versión Lite. Desbloquea gráficas históricas, exportación CSV, Suscripciones ilimitadas y mucho más por solo 3,00 €.
+                Estás en la versión Lite. Desbloquea gráficas históricas, exportación CSV, Suscripciones ilimitadas y mucho más con un pago único de solo 3,00 €.
               </p>
             </div>
             <a
-              href="https://buy.stripe.com/test_4gM14ob841QUb8E7tD2B200"
+              href={STRIPE_CHECKOUT_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-5 py-2.5 rounded-xl text-xs transition-all shrink-0 shadow-lg text-center"
@@ -504,7 +544,7 @@ function App() {
                   onClick={() => setIsUpgradeModalOpen(true)}
                   className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs shadow-lg transition-all"
                 >
-                  Desbloquear por 3,00 €/mes 🚀
+                  Desbloquear por 3,00 € 🚀
                 </button>
               </div>
             )}
@@ -748,15 +788,14 @@ function App() {
                     <p className="text-[11px] text-slate-400">
                       Personaliza la antelación de tus avisos de correo, fija topes de presupuesto y cambia de divisa haciéndote PRO.
                     </p>
-                    <button
-                      onClick={() => {
-                        setIsSettingsModalOpen(false);
-                        setIsUpgradeModalOpen(true);
-                      }}
-                      className="w-full mt-1 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition-all shadow-md"
+                    <a
+                      href={STRIPE_CHECKOUT_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full mt-1 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition-all shadow-md text-center"
                     >
-                      Pasarse a PRO (3,00 €/mes) 🚀
-                    </button>
+                      Pasarse a PRO (3,00 €) 🚀
+                    </a>
                   </div>
                 )}
 
@@ -806,7 +845,7 @@ function App() {
                   Cancelar
                 </button>
                 <a 
-                  href="https://buy.stripe.com/test_4gM14ob841QUb8E7tD2B200" 
+                  href={STRIPE_CHECKOUT_URL} 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg"
@@ -814,6 +853,68 @@ function App() {
                   ¡Pasarse a PRO! 🚀
                 </a>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal para Buzón de Sugerencias y Errores */}
+        {isFeedbackModalOpen && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 className="text-lg font-bold flex items-center gap-2 text-white">
+                  💬 Buzón de Sugerencias y Errores
+                </h3>
+                <button 
+                  onClick={() => setIsFeedbackModalOpen(false)}
+                  className="text-slate-400 hover:text-slate-200"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSendFeedback} className="space-y-4">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Tipo de mensaje</label>
+                  <select 
+                    value={feedbackType} 
+                    onChange={(e) => setFeedbackType(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="bug">🐛 Reportar un error (Bug)</option>
+                    <option value="suggestion">💡 Sugerencia de mejora</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Mensaje</label>
+                  <textarea 
+                    value={feedbackText} 
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    placeholder="Cuéntame qué ha fallado o qué te gustaría ver en la app..."
+                    rows={4}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 resize-none"
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsFeedbackModalOpen(false)}
+                    className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={isSendingFeedback}
+                    className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-slate-950 font-semibold px-4 py-2 rounded-lg text-sm transition-all"
+                  >
+                    {isSendingFeedback ? 'Enviando...' : 'Enviar mensaje'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
