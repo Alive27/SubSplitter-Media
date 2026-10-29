@@ -20,7 +20,7 @@ function App() {
   const [newName, setNewName] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newCategory, setNewCategory] = useState('Streaming');
-  const [newBillingCycle, setNewBillingCycle] = useState('monthly');
+  const [newBillingCycle, setNewBillingCycle] = useState('Mensual');
 
   // Referencia para capturar la tarjeta como imagen
   const cardRef = useRef(null);
