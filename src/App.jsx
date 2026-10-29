@@ -208,7 +208,6 @@ function App() {
   // Generador de datos históricos simulados basados en el gasto mensual actual para la gráfica PRO
   const generateChartData = () => {
     const months = ['Nov', 'Dic', 'Ene', 'Feb', 'Mar', 'Abr'];
-    // Simulamos una curva realista de crecimiento en base al total actual
     const base = totalMonthly;
     return months.map((m, index) => {
       const varianceFactor = 0.8 + (index * 0.04) + (Math.sin(index) * 0.05);
@@ -391,7 +390,7 @@ function App() {
           </div>
         </div>
 
-        {/* NUEVA SECCIÓN: Gráfica Histórica de Evolución de Gastos (Exclusiva PRO o con Preview Lite) */}
+        {/* NUEVA SECCIÓN: Gráfica Histórica de Evolución de Gastos */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -443,7 +442,6 @@ function App() {
                 const heightPercentage = Math.round((item.amount / maxChartValue) * 100);
                 return (
                   <div key={index} className="flex-1 flex flex-col items-center h-full justify-end group relative">
-                    {/* Tooltip flotante al pasar el ratón */}
                     <div className="absolute -top-8 bg-slate-800 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-slate-700 shadow-lg">
                       {item.amount.toFixed(2)} €
                     </div>
