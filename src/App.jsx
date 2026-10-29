@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Crown } from 'lucide-react';
+import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Crown, CheckCircle2 } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { toPng } from 'html-to-image';
 
@@ -7,6 +7,7 @@ function App() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [session, setSession] = useState(null);
   const [hourlyRate, setHourlyRate] = useState(12);
+  const [isPremium, setIsPremium] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   
   // Estados para autenticación
@@ -41,6 +42,7 @@ function App() {
         fetchProfile(session.user.id);
       } else {
         setSubscriptions([]);
+        setIsPremium(false);
       }
     });
 
@@ -61,12 +63,13 @@ function App() {
   const fetchProfile = async (userId) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('hourly_rate')
+      .select('hourly_rate, is_premium')
       .eq('id', userId)
       .single();
 
     if (data && !error) {
       setHourlyRate(data.hourly_rate || 12);
+      setIsPremium(data.is_premium || false);
     }
   };
 
@@ -239,11 +242,20 @@ function App() {
         
         {/* Cabecera Responsiva */}
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-              SubSplitter Media
-            </h1>
-            <p className="text-sm text-slate-400">Controla tus micro-pagos y fugas de dinero</p>
+          <div className="flex items-center gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+                  SubSplitter Media
+                </h1>
+                {isPremium && (
+                  <span className="bg-amber-400/10 border border-amber-400/30 text-amber-400 text-xs px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                    <Crown size={12} /> PRO
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-slate-400">Controla tus micro-pagos y fugas de dinero</p>
+            </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-start sm:justify-end">
             <button
@@ -269,26 +281,38 @@ function App() {
           </div>
         </header>
 
-        {/* Banner de Promoción Premium con Enlace Real de Stripe */}
-        <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-cyan-950/60 border border-emerald-500/30 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-          <div>
-            <h3 className="font-bold text-emerald-400 text-sm flex items-center gap-1.5">
-              <Crown size={16} className="text-amber-400" /> SubSplitter Media Premium
-            </h3>
-            <p className="text-xs text-slate-300 mt-1">
-              Desbloquea suscripciones ilimitadas, exportación avanzada y carteles Pro sin marcas de agua por solo 3,00 €/mes.
-            </p>
+        {/* Banner de Promoción Premium (Solo se muestra si NO es Premium) */}
+        {!isPremium ? (
+          <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-cyan-950/60 border border-emerald-500/30 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+            <div>
+              <h3 className="font-bold text-emerald-400 text-sm flex items-center gap-1.5">
+                <Crown size={16} className="text-amber-400" /> SubSplitter Media Premium
+              </h3>
+              <p className="text-xs text-slate-300 mt-1">
+                Desbloquea suscripciones ilimitadas, exportación avanzada y carteles Pro sin marcas de agua por solo 3,00 €/mes.
+              </p>
+            </div>
+            <a
+              href="https://buy.stripe.com/4gM14ob841QUb8E7tD2B200"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-5 py-2.5 rounded-xl text-xs transition-all shrink-0 shadow-lg text-center"
+            >
+              Obtener Premium 🚀
+            </a>
           </div>
-          <a
-            href="https://buy.stripe.com/4gM14ob841QUb8E7tD2B200"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-5 py-2.5 rounded-xl text-xs transition-all shrink-0 shadow-lg text-center"
-          >
-            Obtener Premium 🚀
-          </a>
-        </div>
+        ) : (
+          <div className="bg-gradient-to-r from-amber-950/40 via-slate-900 to-amber-950/40 border border-amber-500/30 p-4 rounded-2xl flex items-center gap-3 shadow-lg">
+            <div className="p-2 bg-amber-400/10 rounded-xl text-amber-400">
+              <CheckCircle2 size={20} />
+            </div>
+            <div>
+              <h4 className="font-semibold text-amber-400 text-sm">Suscripción Premium Activa</h4>
+              <p className="text-xs text-slate-300">Disfrutas de todas las ventajas avanzadas de SubSplitter Media sin restricciones.</p>
+            </div>
+          </div>
+        )}
 
         {/* Tarjetas de Resumen & Métrica de Realidad */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
