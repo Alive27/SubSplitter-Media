@@ -159,6 +159,26 @@ function App() {
     await supabase.auth.signOut();
   };
 
+  // Función para manejar la exportación CSV exclusiva para PRO
+  const handleExportCSV = () => {
+    if (!isPremium) {
+      setIsUpgradeModalOpen(true);
+      return;
+    }
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + ["Servicio,Precio,Ciclo,Categoría"].concat(
+          subscriptions.map(s => `${s.name},${s.amount},${s.billing_cycle},${s.category}`)
+        ).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "mis_suscripciones_subsplitter.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Función inteligente para asociar dominios oficiales para los logotipos
   const getServiceDomain = (name) => {
     const n = name.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -314,7 +334,7 @@ function App() {
                 <Crown size={16} className="text-amber-400" /> SubSplitter Media Premium
               </h3>
               <p className="text-xs text-slate-300 mt-1">
-                Estás en la versión Lite ({subscriptions.length}/{LITE_LIMIT} suscripciones). Desbloquea suscripciones ilimitadas por solo 3,00 €/mes.
+                Estás en la versión Lite ({subscriptions.length}/{LITE_LIMIT} suscripciones). Desbloquea exportación CSV y suscripciones ilimitadas por solo 3,00 €/mes.
               </p>
             </div>
             <a
@@ -381,22 +401,11 @@ function App() {
             
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <button
-                onClick={() => {
-                  const csvContent = "data:text/csv;charset=utf-8," 
-                    + ["Servicio,Precio,Ciclo,Categoría"].concat(
-                        subscriptions.map(s => `${s.name},${s.amount},${s.billing_cycle},${s.category}`)
-                      ).join("\n");
-                  const encodedUri = encodeURI(csvContent);
-                  const link = document.createElement("a");
-                  link.setAttribute("href", encodedUri);
-                  link.setAttribute("download", "mis_suscripciones_subsplitter.csv");
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }}
+                onClick={handleExportCSV}
                 className="text-xs bg-slate-950 text-slate-300 hover:text-emerald-400 border border-slate-800 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5"
+                title={!isPremium ? "Función exclusiva PRO" : "Exportar datos a CSV"}
               >
-                📥 Exportar CSV
+                📥 Exportar CSV {!isPremium && <Crown size={12} className="text-amber-400 inline" />}
               </button>
 
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
@@ -468,16 +477,16 @@ function App() {
           )}
         </div>
 
-        {/* Modal de Límite Lite Alcanzado */}
+        {/* Modal de Límite Lite / Funciones PRO Alcanzado */}
         {isUpgradeModalOpen && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-slate-900 border border-amber-500/30 p-6 rounded-2xl max-w-md w-full text-center shadow-2xl space-y-4">
               <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto text-amber-400 text-xl font-bold">
                 ⭐
               </div>
-              <h3 className="text-xl font-bold text-white">Límite de la versión Lite alcanzado</h3>
+              <h3 className="text-xl font-bold text-white">Función exclusiva PRO</h3>
               <p className="text-slate-300 text-sm">
-                Has alcanzado el máximo de {LITE_LIMIT} suscripciones gratuitas. Desbloquea **Suscripciones Ilimitadas** y todas las ventajas PRO haciendo una actualización rápida.
+                Has alcanzado un límite de la versión Lite o intentado usar una herramienta avanzada (como exportar a CSV o añadir más de {LITE_LIMIT} suscripciones). ¡Hazte PRO para desbloquear todo sin restricciones!
               </p>
               
               <div className="flex gap-3 justify-center pt-2">
