@@ -159,26 +159,6 @@ function App() {
     await supabase.auth.signOut();
   };
 
-  // Función para manejar la exportación CSV exclusiva para PRO
-  const handleExportCSV = () => {
-    if (!isPremium) {
-      setIsUpgradeModalOpen(true);
-      return;
-    }
-
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + ["Servicio,Precio,Ciclo,Categoría"].concat(
-          subscriptions.map(s => `${s.name},${s.amount},${s.billing_cycle},${s.category}`)
-        ).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "mis_suscripciones_subsplitter.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   // Función inteligente para asociar dominios oficiales para los logotipos
   const getServiceDomain = (name) => {
     const n = name.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -400,13 +380,34 @@ function App() {
             <h2 className="text-lg font-semibold text-slate-200">Tus Suscripciones Activas</h2>
             
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-              <button
-                onClick={handleExportCSV}
-                className="text-xs bg-slate-950 text-slate-300 hover:text-emerald-400 border border-slate-800 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5"
-                title={!isPremium ? "Función exclusiva PRO" : "Exportar datos a CSV"}
-              >
-                📥 Exportar CSV {!isPremium && <Crown size={12} className="text-amber-400 inline" />}
-              </button>
+              {/* Botón condicional estricto: Si es PRO descarga el CSV, si es LITE abre el modal de pago */}
+              {isPremium ? (
+                <button
+                  onClick={() => {
+                    const csvContent = "data:text/csv;charset=utf-8," 
+                      + ["Servicio,Precio,Ciclo,Categoría"].concat(
+                          subscriptions.map(s => `${s.name},${s.amount},${s.billing_cycle},${s.category}`)
+                        ).join("\n");
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", "mis_suscripciones_subsplitter.csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="text-xs bg-slate-950 text-slate-300 hover:text-emerald-400 border border-slate-800 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5"
+                >
+                  📥 Exportar CSV
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsUpgradeModalOpen(true)}
+                  className="text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-medium"
+                >
+                  <Crown size={12} /> Desbloquear CSV (PRO)
+                </button>
+              )}
 
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
                 <Filter size={14} className="text-slate-500 shrink-0" />
