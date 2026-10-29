@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera } from 'lucide-react';
+import { PlusCircle, Trash2, LogOut, Clock, Filter, Share2, Sparkles, Download, MessageCircle, Send, Globe, Camera, Tv, Music, Cpu, Code, Zap } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { toPng } from 'html-to-image';
 
@@ -134,6 +134,20 @@ function App() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+  };
+
+  // Función para obtener icono y color según el servicio
+  const getServiceStyle = (name) => {
+    const n = name.toLowerCase();
+    if (n.includes('netflix')) return { bg: 'bg-red-500/10 text-red-500 border-red-500/20', icon: <Tv size={18} /> };
+    if (n.includes('spotify')) return { bg: 'bg-green-500/10 text-green-500 border-green-500/20', icon: <Music size={18} /> };
+    if (n.includes('hbo') || n.includes('max')) return { bg: 'bg-purple-500/10 text-purple-400 border-purple-500/20', icon: <Tv size={18} /> };
+    if (n.includes('chatgpt') || n.includes('openai') || n.includes('claude')) return { bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', icon: <Cpu size={18} /> };
+    if (n.includes('github') || n.includes('gitlab')) return { bg: 'bg-slate-700/35 text-slate-300 border-slate-600/20', icon: <Code size={18} /> };
+    if (n.includes('prime') || n.includes('amazon')) return { bg: 'bg-sky-500/10 text-sky-400 border-sky-500/20', icon: <Zap size={18} /> };
+    
+    // Por defecto según categoría
+    return { bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', icon: <Sparkles size={18} /> };
   };
 
   // Función para descargar la tarjeta como imagen PNG
@@ -334,34 +348,37 @@ function App() {
             <p className="text-slate-500 text-center py-8">No hay suscripciones en esta categoría.</p>
           ) : (
             <div className="space-y-3">
-              {filteredSubscriptions.map((sub) => (
-                <div key={sub.id} className="flex items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-800/60 hover:border-slate-700 transition-all">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-lg shrink-0">
-                      {sub.name.charAt(0)}
+              {filteredSubscriptions.map((sub) => {
+                const style = getServiceStyle(sub.name);
+                return (
+                  <div key={sub.id} className="flex items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-800/60 hover:border-slate-700 transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${style.bg}`}>
+                        {style.icon}
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-slate-200">{sub.name}</h3>
+                        <span className="inline-block text-xs px-2 py-0.5 mt-1 rounded-full bg-slate-800 text-slate-300">
+                          {sub.category}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-slate-200">{sub.name}</h3>
-                      <span className="inline-block text-xs px-2 py-0.5 mt-1 rounded-full bg-slate-800 text-slate-300">
-                        {sub.category}
-                      </span>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <span className="font-semibold text-slate-100 block">{Number(sub.amount).toFixed(2)} €</span>
+                        <span className="text-xs text-slate-500 uppercase tracking-wider">{sub.billing_cycle}</span>
+                      </div>
+                      <button 
+                        onClick={() => handleDelete(sub.id)}
+                        className="text-slate-500 hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-slate-900"
+                        title="Eliminar suscripción"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <span className="font-semibold text-slate-100 block">{Number(sub.amount).toFixed(2)} €</span>
-                      <span className="text-xs text-slate-500 uppercase tracking-wider">{sub.billing_cycle}</span>
-                    </div>
-                    <button 
-                      onClick={() => handleDelete(sub.id)}
-                      className="text-slate-500 hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-slate-900"
-                      title="Eliminar suscripción"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -487,7 +504,7 @@ function App() {
                     type="text" 
                     value={newName} 
                     onChange={(e) => setNewName(e.target.value)}
-                    placeholder="Ej: Spotify, HBO..." 
+                    placeholder="Ej: Netflix, Spotify, ChatGPT..." 
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
                     required
                   />
