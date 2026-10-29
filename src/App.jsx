@@ -80,7 +80,7 @@ function App() {
 
     if (data && !error) {
       setHourlyRate(data.hourly_rate || 12);
-      setIsPremium(data.is_premium || false);
+      setIsPremium(data.is_premium || false); // <-- Aquí leemos correctamente si eres PRO
       setEmailNotifications(data.email_notifications ?? true);
       setAlertDaysBefore(data.alert_days_before || 3);
       setBudgetLimit(data.budget_limit || 50);
@@ -196,7 +196,6 @@ function App() {
     await supabase.auth.signOut();
   };
 
-  // Función inteligente para asociar dominios oficiales para los logotipos
   const getServiceDomain = (name) => {
     const n = name.toLowerCase().replace(/[^a-z0-9]/g, '');
     if (n.includes('netflix')) return 'netflix.com';
@@ -215,7 +214,6 @@ function App() {
     return `${n}.com`;
   };
 
-  // Función para calcular días restantes hasta el próximo pago
   const getDaysUntilPayment = (dateString) => {
     if (!dateString) return null;
     const today = new Date();
@@ -227,7 +225,6 @@ function App() {
     return diffDays;
   };
 
-  // Función para descargar la tarjeta como imagen PNG
   const downloadCardAsImage = async () => {
     if (cardRef.current === null) return;
     try {
@@ -241,7 +238,6 @@ function App() {
     }
   };
 
-  // Cálculos
   const totalMonthly = subscriptions.reduce((acc, sub) => {
     const monthlyAmount = sub.billing_cycle === 'yearly' ? sub.amount / 12 : sub.amount;
     return acc + Number(monthlyAmount);
@@ -255,7 +251,6 @@ function App() {
     ? subscriptions 
     : subscriptions.filter(sub => sub.category === selectedCategory);
 
-  // Generador de datos históricos simulados basados en el gasto mensual actual para la gráfica PRO
   const generateChartData = () => {
     const months = ['Nov', 'Dic', 'Ene', 'Feb', 'Mar', 'Abr'];
     const base = totalMonthly;
@@ -326,7 +321,7 @@ function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 overflow-x-hidden">
       <div className="max-w-4xl mx-auto space-y-6 w-full">
         
-        {/* Cabecera Responsiva */}
+        {/* Cabecera */}
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
           <div className="flex items-center gap-3">
             <div>
@@ -537,7 +532,6 @@ function App() {
             <h2 className="text-lg font-semibold text-slate-200">Tus Suscripciones Activas</h2>
             
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-              {/* Botón condicional de Exportar CSV */}
               {isPremium ? (
                 <button
                   onClick={() => {
@@ -566,7 +560,6 @@ function App() {
                 </button>
               )}
 
-              {/* Filtros de Categoría Libres */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
                 <Filter size={14} className="text-slate-500 shrink-0" />
                 {['All', 'Streaming', 'IA', 'Software', 'Ocio'].map((cat) => (
@@ -593,7 +586,7 @@ function App() {
               {filteredSubscriptions.map((sub) => {
                 const domain = getServiceDomain(sub.name);
                 const daysLeft = getDaysUntilPayment(sub.next_payment_date);
-                const isUrgent = daysLeft !== null && daysLeft <= 3 && daysLeft >= 0;
+                const isUrgent = daysLeft !== null && daysLeft <= alertDaysBefore && daysLeft >= 0;
                 const isPastDue = daysLeft !== null && daysLeft < 0;
 
                 return (
@@ -616,7 +609,6 @@ function App() {
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-medium text-slate-200">{sub.name}</h3>
-                          {/* Alerta de Renovación Próxima */}
                           {isUrgent && (
                             <span className="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
                               <AlertTriangle size={10} /> Renueva en {daysLeft === 0 ? 'hoy' : `${daysLeft}d`}
@@ -661,7 +653,7 @@ function App() {
           )}
         </div>
 
-        {/* Modal de Ajustes y Opciones PRO (Engranaje) */}
+        {/* Modal de Ajustes y Opciones PRO */}
         {isSettingsModalOpen && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-5">
@@ -678,7 +670,6 @@ function App() {
               </div>
 
               <div className="space-y-4">
-                {/* Opción 1: Notificaciones por correo (General) */}
                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
@@ -697,14 +688,12 @@ function App() {
                   />
                 </div>
 
-                {/* OPCIONES EXCLUSIVAS PRO */}
                 {isPremium ? (
                   <div className="space-y-3 bg-amber-950/20 p-4 rounded-xl border border-amber-500/30">
                     <div className="flex items-center gap-1.5 text-amber-400 text-xs font-semibold">
                       <Crown size={14} /> Controles Avanzados PRO
                     </div>
 
-                    {/* Antelación del aviso */}
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-slate-300">Antelación de alerta:</span>
                       <select 
@@ -718,7 +707,6 @@ function App() {
                       </select>
                     </div>
 
-                    {/* Límite de presupuesto */}
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-slate-300">Tope de gasto mensual:</span>
                       <div className="flex items-center gap-1">
@@ -732,7 +720,6 @@ function App() {
                       </div>
                     </div>
 
-                    {/* Moneda Base */}
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-slate-300">Moneda preferida:</span>
                       <select 
@@ -766,7 +753,6 @@ function App() {
                   </div>
                 )}
 
-                {/* Estado de Cuenta */}
                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 flex items-center justify-between">
                   <span className="text-xs text-slate-400">Estado de cuenta:</span>
                   {isPremium ? (
@@ -793,7 +779,7 @@ function App() {
           </div>
         )}
 
-        {/* Modal de Límite Lite / Funciones PRO Alcanzado */}
+        {/* Modal de Límite Lite / Funciones PRO */}
         {isUpgradeModalOpen && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-slate-900 border border-amber-500/30 p-6 rounded-2xl max-w-md w-full text-center shadow-2xl space-y-4">
