@@ -18,7 +18,7 @@ function App() {
   // Estados para modales
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false); // NUEVO: Modal de límite Lite alcanzado
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   
   const [newName, setNewName] = useState('');
   const [newAmount, setNewAmount] = useState('');
@@ -87,10 +87,10 @@ function App() {
       .eq('id', session.user.id);
   };
 
-  // NUEVO: Validación previa antes de abrir el modal de añadir
+  // Validación previa antes de abrir el modal de añadir
   const handleOpenAddModal = () => {
     if (!isPremium && subscriptions.length >= LITE_LIMIT) {
-      setIsUpgradeModalOpen(true); // Muestra el aviso si supera el límite Lite
+      setIsUpgradeModalOpen(true);
       return;
     }
     setIsModalOpen(true);
@@ -100,7 +100,6 @@ function App() {
     e.preventDefault();
     if (!newName || !newAmount || !session) return;
 
-    // Doble verificación por seguridad
     if (!isPremium && subscriptions.length >= LITE_LIMIT) {
       setIsModalOpen(false);
       setIsUpgradeModalOpen(true);
@@ -469,7 +468,7 @@ function App() {
           )}
         </div>
 
-        {/* NUEVO: Modal de Límite Lite Alcanzado */}
+        {/* Modal de Límite Lite Alcanzado */}
         {isUpgradeModalOpen && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-slate-900 border border-amber-500/30 p-6 rounded-2xl max-w-md w-full text-center shadow-2xl space-y-4">
@@ -518,7 +517,7 @@ function App() {
                 </button>
               </div>
 
-              {/* El Cartel (Tarjeta PNG) */}
+              {/* El Cartel (Tarjeta PNG con marca de agua dinámica Lite / PRO) */}
               <div ref={cardRef} className="bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 p-6 rounded-2xl border border-emerald-500/30 text-center space-y-4 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
                 
@@ -542,8 +541,16 @@ function App() {
                   "Mantengo {subscriptions.length} suscripciones activas devorando mis ahorros."
                 </p>
 
-                <div className="pt-2 border-t border-slate-800 text-[10px] text-slate-500 font-mono">
-                  subsplitter-media.vercel.app
+                {/* Pie dinámico: Marca de agua en Lite / Edición limpia en PRO */}
+                <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500 font-mono">
+                  <span>subsplitter-media.vercel.app</span>
+                  {!isPremium ? (
+                    <span className="text-emerald-500/70 font-sans font-semibold">Versión Lite</span>
+                  ) : (
+                    <span className="text-amber-400 flex items-center gap-1 font-sans font-semibold">
+                      <Crown size={10} /> PRO Edition
+                    </span>
+                  )}
                 </div>
               </div>
 
